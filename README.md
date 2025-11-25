@@ -7,7 +7,7 @@
 
 # pkgatzh
 
-Chinese-named package for retrieving package path and name information
+Chinese-named package with comprehensive package information extraction capabilities
 
 ---
 
@@ -19,11 +19,13 @@ Chinese-named package for retrieving package path and name information
 
 ## Main Features
 
-📁 **Path Extraction**: Get absolute path to the package that invokes the function
-📦 **Name Extraction**: Extract package name from source code
-🎯 **Context Awareness**: Uses runtime stack information to determine context
-🔧 **Chinese Naming**: Intuitive Chinese-named struct and method APIs
-✨ **Simple Integration**: Lightweight dependencies wrapping yyle88/runpath and yyle88/syntaxgo
+📁 **Path Extraction**: Get absolute filesystem path to the invoking package
+📦 **Name Extraction**: Extract package declaration name from source code
+🌐 **Import Path**: Retrieve complete import path used in import statements
+🏗️ **Module Path**: Extract module path defined in go.mod
+🎯 **Context Awareness**: Uses runtime stack analysis to determine invocation context
+🔧 **Chinese Naming**: Intuitive Chinese-named struct fields following "English prefix + 4 Chinese characters" pattern
+✨ **Simple Integration**: Lightweight dependencies wrapping yyle88/runpath, yyle88/syntaxgo, and golang.org/x/tools/go/packages
 
 ## Installation
 
@@ -35,7 +37,7 @@ go get github.com/go-zwbc/pkgatzh
 
 ### Basic Package Information Extraction
 
-This example demonstrates extracting package path and name information.
+This example demonstrates extracting comprehensive package information.
 
 ```go
 package main
@@ -52,8 +54,10 @@ func main() {
 
 	// Print package information
 	fmt.Println("=== Package Information ===")
-	fmt.Println("Package Path:", info.P路径)
-	fmt.Println("Package Name:", info.N包名)
+	fmt.Println("Filesystem Path:", info.P目录路径)
+	fmt.Println("Package Name:", info.N包的名称)
+	fmt.Println("Import Path:", info.I引用路径)
+	fmt.Println("Module Path:", info.M项目模块)
 }
 ```
 
@@ -65,20 +69,22 @@ func main() {
 
 | Type | Description (EN) | 描述 (ZH) |
 |------|------------------|-----------|
-| `T位置信息` | Struct containing package path and name | 包含包路径和包名的结构体 |
+| `T位置信息` | Struct containing comprehensive package location information | 包含全面包位置信息的结构体 |
 
 ### Creation Function
 
 | Function | Description (EN) | 描述 (ZH) |
 |----------|------------------|-----------|
-| `NewT位置信息()` | Creates new instance with package path and name | 创建包含包路径和包名的新实例 |
+| `NewT位置信息()` | Creates new instance with comprehensive package information | 创建包含全面包信息的新实例 |
 
 ### Struct Fields
 
 | Field | Description (EN) | 描述 (ZH) |
 |-------|------------------|-----------|
-| `P路径 string` | Absolute filesystem path to the package DIR (e.g., "/path/to/pkg") | 包目录在文件系统中的绝对路径（如："/path/to/pkg"） |
-| `N包名 string` | Package name from package declaration (e.g., "main"), not import path | package 声明中的包名（如："main"），不是导入路径 |
+| `P目录路径 string` | Absolute filesystem path to the package (e.g., "/path/to/pkg") | 包目录在文件系统中的绝对路径（如："/path/to/pkg"） |
+| `N包的名称 string` | Package name from package declaration (e.g., "main"), not import path | package 声明中的包名（如："main"），不是导入路径 |
+| `I引用路径 string` | Import path used in import statements (e.g., "github.com/go-zwbc/pkgatzh") | import 语句中使用的引用路径（如："github.com/go-zwbc/pkgatzh"） |
+| `M项目模块 string` | Module path defined in go.mod (e.g., "github.com/go-zwbc/pkgatzh") | go.mod 中定义的模块路径（如："github.com/go-zwbc/pkgatzh"） |
 
 ## Examples
 
@@ -87,8 +93,8 @@ func main() {
 ```go
 func TestSomething(t *testing.T) {
     info := pkgatzh.NewT位置信息()
-    testDataDIR := filepath.Join(info.P路径, "testdata")
-    // Load test data from testDataDIR
+    testDataPath := filepath.Join(info.P目录路径, "testdata")
+    // Load test data from testDataPath
 }
 ```
 
@@ -97,7 +103,7 @@ func TestSomething(t *testing.T) {
 ```go
 func init() {
     info := pkgatzh.NewT位置信息()
-    configPath := filepath.Join(info.P路径, "config.yaml")
+    configPath := filepath.Join(info.P目录路径, "config.yaml")
     // Load configuration from package-based path
 }
 ```
@@ -108,23 +114,30 @@ func init() {
 func NewService() *Service {
     info := pkgatzh.NewT位置信息()
     return &Service{
-        name: info.N包名,
-        path: info.P路径,
+        name: info.N包的名称,
+        path: info.P目录路径,
+        importPath: info.I引用路径,
+        modulePath: info.M项目模块,
     }
 }
 ```
 
 ## Implementation Details
 
-### Path Extraction
+### Filesystem Path Extraction
 - Uses `yyle88/runpath` to get runtime path information
-- `runpath.PARENT.Skip(1)` gets the parent DIR of the invoking package
-- Returns absolute path to the package
+- `runpath.PARENT.Skip(1)` gets the parent path of the invoking package
+- Returns absolute path to the package on filesystem
 
-### Name Extraction
+### Package Name Extraction
 - Uses `yyle88/syntaxgo` to parse Go source code
 - `syntaxgo.GetPkgName(runpath.Skip(1))` extracts package name from source
 - Returns the package name as declared in Go source
+
+### Import Path and Module Path Extraction
+- Uses `golang.org/x/tools/go/packages` to load package metadata
+- Supports both production packages and test packages through intelligent matching
+- Extracts complete import path and module path information
 
 ### Context Detection
 - Runtime stack analysis determines the invocation point
@@ -135,8 +148,11 @@ func NewService() *Service {
 
 - `T` prefix: Type definitions (T位置信息)
 - `New` prefix: Creation functions (NewT位置信息)
-- `P` prefix: Path fields (P路径)
-- `N` prefix: Name fields (N包名)
+- `P` prefix: Path fields (P目录路径)
+- `N` prefix: Name fields (N包的名称)
+- `I` prefix: Import path fields (I引用路径)
+- `M` prefix: Module path fields (M项目模块)
+- Field naming: "English prefix + 4 Chinese characters" pattern (e.g., P目录路径, N包的名称)
 
 <!-- TEMPLATE (EN) BEGIN: STANDARD PROJECT FOOTER -->
 <!-- VERSION 2025-11-20 04:26:32.402216 +0000 UTC -->

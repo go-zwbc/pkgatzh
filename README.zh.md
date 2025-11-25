@@ -7,7 +7,7 @@
 
 # pkgatzh
 
-使用中文命名获取包路径和包名信息
+使用中文命名提供全面的包信息提取能力
 
 ---
 
@@ -19,11 +19,13 @@
 
 ## 主要特性
 
-📁 **路径获取**: 获取调用函数的包的绝对路径
-📦 **名称提取**: 从源代码中提取包名
-🎯 **上下文感知**: 使用运行时栈信息确定上下文
-🔧 **中文命名**: 直观的中文命名结构体和方法 API
-✨ **简单集成**: 轻量依赖封装 yyle88/runpath 和 yyle88/syntaxgo
+📁 **路径获取**: 获取调用包的文件系统绝对路径
+📦 **名称提取**: 从源代码提取 package 声明名称
+🌐 **引用路径**: 获取 import 语句中使用的完整引用路径
+🏗️ **模块路径**: 提取 go.mod 中定义的模块路径
+🎯 **上下文感知**: 使用运行时栈分析确定调用上下文
+🔧 **中文命名**: 直观的中文命名结构体字段，遵循"字母 + 4 汉字"模式
+✨ **简单集成**: 轻量依赖封装 yyle88/runpath、yyle88/syntaxgo 和 golang.org/x/tools/go/packages
 
 ## 安装
 
@@ -35,7 +37,7 @@ go get github.com/go-zwbc/pkgatzh
 
 ### 基础包信息获取
 
-此示例演示获取包路径和包名信息。
+此示例演示获取全面的包信息。
 
 ```go
 package main
@@ -52,8 +54,10 @@ func main() {
 
 	// 显示包信息
 	fmt.Println("=== 包信息 ===")
-	fmt.Println("包路径:", info.P路径)
-	fmt.Println("包名:", info.N包名)
+	fmt.Println("文件系统路径:", info.P目录路径)
+	fmt.Println("包名:", info.N包的名称)
+	fmt.Println("引用路径:", info.I引用路径)
+	fmt.Println("模块路径:", info.M项目模块)
 }
 ```
 
@@ -65,20 +69,22 @@ func main() {
 
 | 类型 | 描述 (ZH) | Description (EN) |
 |------|-----------|------------------|
-| `T位置信息` | 包含包路径和包名的结构体 | Struct containing package path and name |
+| `T位置信息` | 包含全面包位置信息的结构体 | Struct containing comprehensive package location information |
 
 ### 创建函数
 
 | 函数 | 描述 (ZH) | Description (EN) |
 |------|-----------|------------------|
-| `NewT位置信息()` | 创建包含包路径和包名的新实例 | Creates new instance with package path and name |
+| `NewT位置信息()` | 创建包含全面包信息的新实例 | Creates new instance with comprehensive package information |
 
 ### 结构体字段
 
 | 字段 | 描述 (ZH) | Description (EN) |
 |------|-----------|------------------|
-| `P路径 string` | 包目录在文件系统中的绝对路径（如："/path/to/pkg"） | Absolute filesystem path to the package DIR (e.g., "/path/to/pkg") |
-| `N包名 string` | package 声明中的包名（如："main"），不是导入路径 | Package name from package declaration (e.g., "main"), not import path |
+| `P目录路径 string` | 包目录在文件系统中的绝对路径（如："/path/to/pkg"） | Absolute filesystem path to the package (e.g., "/path/to/pkg") |
+| `N包的名称 string` | package 声明中的包名（如："main"），不是导入路径 | Package name from package declaration (e.g., "main"), not import path |
+| `I引用路径 string` | import 语句中使用的引用路径（如："github.com/go-zwbc/pkgatzh"） | Import path used in import statements (e.g., "github.com/go-zwbc/pkgatzh") |
+| `M项目模块 string` | go.mod 中定义的模块路径（如："github.com/go-zwbc/pkgatzh"） | Module path defined in go.mod (e.g., "github.com/go-zwbc/pkgatzh") |
 
 ## 示例
 
@@ -87,8 +93,8 @@ func main() {
 ```go
 func TestSomething(t *testing.T) {
     info := pkgatzh.NewT位置信息()
-    testDataDIR := filepath.Join(info.P路径, "testdata")
-    // 从 testDataDIR 加载测试数据
+    testDataPath := filepath.Join(info.P目录路径, "testdata")
+    // 从 testDataPath 加载测试数据
 }
 ```
 
@@ -97,7 +103,7 @@ func TestSomething(t *testing.T) {
 ```go
 func init() {
     info := pkgatzh.NewT位置信息()
-    configPath := filepath.Join(info.P路径, "config.yaml")
+    configPath := filepath.Join(info.P目录路径, "config.yaml")
     // 从基于包的路径加载配置
 }
 ```
@@ -108,23 +114,30 @@ func init() {
 func NewService() *Service {
     info := pkgatzh.NewT位置信息()
     return &Service{
-        name: info.N包名,
-        path: info.P路径,
+        name: info.N包的名称,
+        path: info.P目录路径,
+        importPath: info.I引用路径,
+        modulePath: info.M项目模块,
     }
 }
 ```
 
 ## 实现细节
 
-### 路径获取
+### 文件系统路径获取
 - 使用 `yyle88/runpath` 获取运行时路径信息
-- `runpath.PARENT.Skip(1)` 获取调用包的父级目录
-- 返回包的绝对路径
+- `runpath.PARENT.Skip(1)` 获取调用包的父级路径
+- 返回包在文件系统上的绝对路径
 
-### 名称提取
+### 包名提取
 - 使用 `yyle88/syntaxgo` 解析 Go 源代码
 - `syntaxgo.GetPkgName(runpath.Skip(1))` 从源码提取包名
 - 返回在 Go 源码中声明的包名
+
+### 引用路径和模块路径提取
+- 使用 `golang.org/x/tools/go/packages` 加载包元数据
+- 通过智能匹配支持生产包和测试包
+- 提取完整的引用路径和模块路径信息
 
 ### 上下文检测
 - 运行时栈分析确定调用点
@@ -135,8 +148,11 @@ func NewService() *Service {
 
 - `T` 前缀: 类型定义 (T位置信息)
 - `New` 前缀: 创建函数 (NewT位置信息)
-- `P` 前缀: 路径字段 (P路径)
-- `N` 前缀: 名称字段 (N包名)
+- `P` 前缀: 路径字段 (P目录路径)
+- `N` 前缀: 名称字段 (N包的名称)
+- `I` 前缀: 引用路径字段 (I引用路径)
+- `M` 前缀: 模块路径字段 (M项目模块)
+- 字段命名: "字母 + 4 汉字"模式（如：P目录路径、N包的名称）
 
 <!-- TEMPLATE (ZH) BEGIN: STANDARD PROJECT FOOTER -->
 <!-- VERSION 2025-11-20 04:26:32.402216 +0000 UTC -->
