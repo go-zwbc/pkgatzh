@@ -27,6 +27,10 @@ Chinese-named package with comprehensive package information extraction capabili
 🔧 **Chinese Naming**: Intuitive Chinese-named struct fields following "English prefix + 4 Chinese characters" pattern
 ✨ **Simple Integration**: Lightweight dependencies wrapping yyle88/runpath, yyle88/syntaxgo, and golang.org/x/tools/go/packages
 
+## Note
+
+⚠️ This package requires source code environment (.go files and go.mod), applicable in dev/test scenarios. Compiled binaries cannot function when source DIR is absent.
+
 ## Installation
 
 ```bash
